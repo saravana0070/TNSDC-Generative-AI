@@ -42,22 +42,29 @@ def build_discriminator():
 # Load your handwritten alphabet dataset and preprocess it
 def load_dataset():
     data = []
+    labels = []
     folder_path = 'alphabets'
-    subfolder_path = os.path.join(folder_path, "A")
-    if os.path.isdir(subfolder_path):
-        for filename in os.listdir(subfolder_path):
-            image_path = os.path.join(subfolder_path, filename)
-            if os.path.isfile(image_path):
-                image = Image.open(image_path).convert('L')  # Convert to grayscale if necessary
-                image = image.resize((34, 34))  # Resize to match input size
-                image = np.array(image)
-                # Normalize the pixel values to the range [-1, 1]
-                image = (image.astype(np.float32) - 127.5) / 127.5
-                data.append(image)
-    return np.array(data)
+    categories = os.listdir(folder_path)  # Make sure this only contains your 27 folders
+    categories.sort()  # Sort the categories if needed
+
+    for index, category in enumerate(categories):
+        subfolder_path = os.path.join(folder_path, category)
+        if os.path.isdir(subfolder_path):
+            for filename in os.listdir(subfolder_path):
+                image_path = os.path.join(subfolder_path, filename)
+                if os.path.isfile(image_path):
+                    image = Image.open(image_path).convert('L')  # Convert to grayscale
+                    image = image.resize((34, 34))  # Resize to match input size
+                    image = np.array(image)
+                    # Normalize the pixel values to the range [-1, 1]
+                    image = (image.astype(np.float32) - 127.5) / 127.5
+                    data.append(image)
+                    labels.append(index)  # Assuming each folder's index is its label
+
+    return np.array(data), np.array(labels)
 
 # Load your handwritten alphabet dataset
-X_train = load_dataset()
+X_train, y_train = load_dataset()
 
 # Compile both models
 generator = build_generator()
@@ -79,7 +86,6 @@ sample_interval = 1000
 
 # Training loop
 for epoch in range(epochs):
-
     # Train discriminator
     idx = np.random.randint(0, X_train.shape[0], batch_size)
     imgs = X_train[idx]
@@ -107,7 +113,7 @@ for epoch in range(epochs):
         cnt = 0
         for i in range(r):
             for j in range(c):
-                axs[i, j].imshow(gen_imgs[cnt], cmap='gray')  # Display the reshaped image
+                axs[i, j].imshow(gen_imgs[cnt], cmap='gray')
                 axs[i, j].axis('off')
                 cnt += 1
         plt.show()
